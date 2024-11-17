@@ -90,7 +90,7 @@ const ReportLostChild = () => {
                 <Card.Body>
                   <h3 className="text-center mb-4">Bacha Mila</h3>
                   <p className="text-center text-muted mb-4">
-                    Please provide as much information as possible to help us find the lost child.
+                    Save a child 
                   </p>
 
                   {error && <div className="alert alert-danger">{error}</div>}

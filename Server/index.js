@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const User = require('./models/usermodel');
 const MissingChild = require('./models/missingchild');
 const LostChild = require('./models/lostchildmodel');
-const Event = require('./models/eventmodel'); // Assuming Event model is created
+const Event = require('./models/eventmodel');
 const Adoption = require('./models/adoptionmodel1');
 // Initialize the app
 const app = express();
@@ -407,6 +407,27 @@ app.post('/adopt-child', async (req, res) => {
 
 
 
+// ----------------------------- API to Get Children Where founded=false and adopted=false -----------------------------
+app.get('/children-unfound-unadopted', async (req, res) => {
+  try {
+    const children = await MissingChild.find({ founded: false, adopted: false });
+    res.status(200).json(children);
+  } catch (err) {
+    console.error('Error fetching children:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
+
+// ----------------------------- API to Get Children Where founded=true and adopted=false -----------------------------
+app.get('/children-found-unadopted', async (req, res) => {
+  try {
+    const children = await MissingChild.find({ founded: true, adopted: false });
+    res.status(200).json(children);
+  } catch (err) {
+    console.error('Error fetching children:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
 
 
 

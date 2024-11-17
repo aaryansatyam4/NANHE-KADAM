@@ -4,6 +4,7 @@ import Navbar from '../Component/Navbar/CustomNavbar.jsx';
 import MissingChildrenChart from '../Component/MissingChildrenChart/MissingChildrenChart.jsx';
 import Piechart from '../Component/Piechart/Piechart.jsx';
 import LatestNews from '../Component/LatestNews/LatestNews.jsx';
+import Founded_NoParents from '../Component/LatestNews/Founded_NoParents.jsx';
 
 const Dashboard = () => {
   return (
@@ -19,10 +20,10 @@ const Dashboard = () => {
       </div>
 
       <div className="d-flex" style={{ marginTop: '60px', marginLeft: '250px' }}>
-        {/* Content adjusted for sticky sidebar and navbar */}
+       
         <div className="content p-4" style={{ width: '100%' }}>
           <MissingChildrenChart />
-
+          <Founded_NoParents/>
         
         </div>
       </div>

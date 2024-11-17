@@ -13,7 +13,7 @@ const LostChildSchema = new mongoose.Schema({
   additionalComments: { type: String },
   childPhoto: { type: String },
   lastSeenDate: { type: Date, default: Date.now },
-  founded: { type: Boolean, default: false }, // Indicates if the child has been found
+  founded: { type: Boolean, default: false }, 
   read: {type:Boolean, default:false},
 });
 
