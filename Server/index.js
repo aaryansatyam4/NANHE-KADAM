@@ -1,30 +1,34 @@
 const dotenv = require('dotenv');
 dotenv.config();
 const Razorpay = require('razorpay');
-
-
 const express = require('express');
+const { PythonShell } = require('python-shell');
+const path = require('path');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const bcrypt = require('bcrypt');
 const cookieParser = require('cookie-parser');
 const nodemailer = require('nodemailer');
-const { PythonShell } = require('python-shell');
+const fs = require('fs');
+const { spawn } = require('child_process');
 // Import models
 const User = require('./models/usermodel');
 const MissingChild = require('./models/missingchild');
 const LostChild = require('./models/lostchildmodel');
 const Event = require('./models/eventmodel');
 const Adoption = require('./models/adoptionmodel1');
-// Initialize the app
+const { sendMatchEmail, sendMatchNotificationToGuardians } = require('./faceMatchAndEmail');
+ // Ensure the correct path to the file
 const app = express();
-const policeContact = {
-  name: 'NanheKadam',
-  phone: '7852836979',
-  station: 'Police Statioin 1212 ABB3',
-};
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+// Initialize the appxf
+app.use('/reported', express.static(path.join(__dirname, 'reported')));
+
+// Serve missing images similarly if needed
+app.use('/missing', express.static(path.join(__dirname, 'missing')));
 // Enable CORS for all routes globally
 app.use(cors({
   origin: 'http://localhost:5173', // Replace with your frontend origin
@@ -36,7 +40,7 @@ app.use(express.json());
 app.use(cookieParser()); // For accessing cookies
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/', {
+mongoose.connect('mongodb+srv://aaryansatyam4:Asatyam2604@user.ycc6w.mongodb.net/', {
   useNewUrlParser: true,  
   useUnifiedTopology: true,
 })
@@ -56,7 +60,7 @@ const uploadUserPic = multer({ storage: storageUserPic });
 
 const storageMissingChild = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'upload2/');
+    cb(null, 'reported/');
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname);
@@ -66,7 +70,7 @@ const uploadMissingChild = multer({ storage: storageMissingChild });
 
 const storageLostChild = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, 'missing/');
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + '-' + file.originalname);
@@ -77,8 +81,8 @@ const uploadLostChild = multer({ storage: storageLostChild });
 // ----------------------------- User Registration API -----------------------------
 app.post('/register', uploadUserPic.single('photo'), async (req, res) => {
   try {
-    const { name, mobile, email, category, password, id } = req.body;
-    if (!name || !mobile || !email || !category || !password) {
+    const { name, email, category, password, id } = req.body; // Removed mobile
+    if (!name || !email || !category || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
     if (!req.file) {
@@ -87,7 +91,6 @@ app.post('/register', uploadUserPic.single('photo'), async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name,
-      mobile,
       email,
       category,
       password: hashedPassword,
@@ -102,6 +105,7 @@ app.post('/register', uploadUserPic.single('photo'), async (req, res) => {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
+
 
 // ----------------------------- User Login API -----------------------------
 app.post('/login', async (req, res) => {
@@ -205,19 +209,23 @@ app.get('/events', async (req, res) => {
   }
 });
 
-// ----------------------------- Add Missing Child API -----------------------------
+
 app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (req, res) => {
-  const { parentName, contactNumber, childName, age, gender, lastSeen, description } = req.body;
+  const { parentName, contactNumber, childName, email, age, gender, lastSeen, description } = req.body;
   const childPhoto = req.file ? req.file.filename : null;
   const userId = req.cookies.userId;
+
   if (!userId) {
     return res.status(401).json({ message: 'User not authenticated' });
   }
+
   try {
+    // Save missing child data in the database
     const newChild = new MissingChild({
       parentName,
       contactNumber,
       childName,
+      email,
       age,
       gender,
       lastSeen,
@@ -226,27 +234,124 @@ app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (r
       submittedBy: userId,
     });
     const savedChild = await newChild.save();
-    res.status(201).json({ message: 'Child data saved successfully', child: savedChild });
+    console.log('Missing child saved:', savedChild);
+
+    // Define file paths for comparison (image is in the 'reported' folder, matching with 'missing' folder)
+    const missingPhotoPath = path.join(__dirname, 'reported', req.file.filename); // The uploaded image is in 'reported'
+    const missingFolderPath = path.join(__dirname, 'missing'); // Compare with all images in 'missing' folder
+
+    // Run Python face recognition script to find a match
+    const pythonProcess = spawn('python', [
+      './ReportedFaceRecog.py',
+      missingPhotoPath,
+      missingFolderPath, // Path to missing folder for comparison
+    ]);
+
+    console.log("Starting Python face recognition script...");
+
+    let output = '';
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();  // Accumulate output
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', async (code) => {
+      if (code !== 0) {
+        console.error(`Python process exited with code ${code}`);
+        return res.status(500).json({ message: 'Error running face recognition script' });
+      }
+
+      console.log('Python process completed successfully');
+      console.log('Face recognition results:', output);
+
+      try {
+        const matches = JSON.parse(output);
+
+        if (matches.length > 0) {
+          // Send an email to the guardian of the missing child and include matched children
+          for (let match of matches) {
+            const lostChild = { ...req.body, _id: savedChild._id };  // Create an object with the missing child data
+
+            // Send email to the guardian of the matched child
+            await sendMatchNotificationToGuardians(lostChild, matches); // Pass missing child and matched children to the function
+          }
+
+          return res.status(200).json({
+            message: 'Missing child added and face matching completed, email sent to guardians of matching children',
+            matches,
+          });
+        } else {
+          return res.status(200).json({
+            message: 'Missing child added but no match found',
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing face recognition output:', error);
+        return res.status(500).json({ message: 'Error parsing face recognition output' });
+      }
+    });
+
   } catch (err) {
-    console.error('Error saving child data:', err.message);
+    console.error('Error saving missing child data:', err.message);
     res.status(500).json({ message: 'Error saving child data', error: err.message });
   }
 });
 
-// ----------------------------- Add Lost Child API -----------------------------
+
+// // ----------------------------- Add Lost Child API -----------------------------
+// app.post('/add-lost-child', uploadLostChild.single('childPhoto'), async (req, res) => {
+//   const { childName, age, gender,email, lastSeenLocation, description, guardianName, contactInfo, additionalComments } = req.body;
+//   const childPhoto = req.file ? req.file.filename : null;
+//   const userId = req.cookies.userId;
+//   if (!userId) {
+//     return res.status(401).json({ message: 'User not authenticated' });
+//   }
+//   try {
+//     const newLostChild = new LostChild({
+//       submittedBy: userId,
+//       childName,
+//       age,
+//       gender,
+//       email,
+//       lastSeenLocation,
+//       description,
+//       guardianName,
+//       contactInfo,
+//       additionalComments,
+//       childPhoto,
+//     });
+//     const savedLostChild = await newLostChild.save();
+//     res.status(201).json({ message: 'Lost child report saved successfully', child: savedLostChild });
+//   } catch (err) {
+//     console.error('Error saving lost child report:', err.message);
+//     res.status(500).json({ message: 'Internal server error', error: err.message });
+//   }
+// });
+
 app.post('/add-lost-child', uploadLostChild.single('childPhoto'), async (req, res) => {
-  const { childName, age, gender, lastSeenLocation, description, guardianName, contactInfo, additionalComments } = req.body;
+  const { childName, age, gender, email, lastSeenLocation, description, guardianName, contactInfo, additionalComments } = req.body;
+
+  if (!childName || !age || !gender || !email || !lastSeenLocation || !description || !guardianName || !contactInfo) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
   const childPhoto = req.file ? req.file.filename : null;
   const userId = req.cookies.userId;
+
   if (!userId) {
     return res.status(401).json({ message: 'User not authenticated' });
   }
+
   try {
     const newLostChild = new LostChild({
       submittedBy: userId,
       childName,
       age,
       gender,
+      email,
       lastSeenLocation,
       description,
       guardianName,
@@ -254,14 +359,65 @@ app.post('/add-lost-child', uploadLostChild.single('childPhoto'), async (req, re
       additionalComments,
       childPhoto,
     });
+
     const savedLostChild = await newLostChild.save();
-    res.status(201).json({ message: 'Lost child report saved successfully', child: savedLostChild });
+    console.log('Lost child saved:', savedLostChild);
+
+    const missingPhotoPath = path.join(__dirname, 'missing', req.file.filename);
+    const reportedFolderPath = path.join(__dirname, 'reported');
+
+    const pythonProcess = spawn('python', [
+      './Facerecog.py',
+      missingPhotoPath,
+      reportedFolderPath
+    ]);
+
+    console.log("Starting Python face recognition script...");
+
+    let output = '';
+    pythonProcess.stdout.on('data', (data) => {
+      output += data.toString();  // Accumulate output
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', async (code) => {
+      if (code !== 0) {
+        console.error(`Python process exited with code ${code}`);
+        return res.status(500).json({ message: 'Error running face recognition script' });
+      }
+
+      console.log('Python process completed successfully');
+      console.log('Face recognition results:', output);
+
+      try {
+        const matches = JSON.parse(output);
+
+        if (matches.length > 0) {
+          // Send email dynamically with matched data
+          await sendMatchEmail(savedLostChild._id, matches);
+          return res.status(200).json({
+            message: 'Lost child added and face matching completed, email sent to guardian',
+            matches,
+          });
+        } else {
+          return res.status(200).json({
+            message: 'Lost child added but no match found',
+          });
+        }
+      } catch (error) {
+        console.error('Error parsing face recognition output:', error);
+        return res.status(500).json({ message: 'Error parsing face recognition output' });
+      }
+    });
+
   } catch (err) {
     console.error('Error saving lost child report:', err.message);
-    res.status(500).json({ message: 'Internal server error', error: err.message });
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
-
 // ----------------------------- Get All Lost Children API -----------------------------
 app.get('/all-lost-children', async (req, res) => {
   try {
@@ -331,8 +487,8 @@ const otpMap = new Map(); // Temporary store for OTPs, replace with session if n
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: '22103036@mail.jiit.ac.in',
-    pass: process.env.GMAIL_SECRET_PASSWORD,
+    user: '22103044@mail.jiit.ac.in',
+    pass: "Bolnolgel31",
   },
 });
 
@@ -463,11 +619,10 @@ app.post('/adopt-child', async (req, res) => {
 // });
 
 
-
 // Initialize Razorpay instance with environment variables
 const razorpayInstance = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID, // Store your Razorpay Key ID in .env
-  key_secret: process.env.RAZORPAY_KEY_SECRET, // Store your Razorpay Key Secret in .env
+  key_id: "rzp_test_VCPpH2MdmvYasW", // Store your Razorpay Key ID in .env
+  key_secret: "3uJGzZ0NXZRq16XMmnm9yclD", // Store your Razorpay Key Secret in .env
 });
 
 // ----------------------------- Donation Order API -----------------------------
@@ -607,10 +762,51 @@ app.post('/adopt-child', async (req, res) => {
 });
 
 
+const sharp = require('sharp'); // Import sharp for image processing
+
+const debounceTime = 200; // Time in milliseconds
+let debounceTimeouts = {};
+
+// fs.watch('./missing', (eventType, filename) => {
+//   if (filename) {
+//     const filePath = path.join(__dirname, 'missing', filename);
+
+//     // Clear the previous timeout for this file
+//     if (debounceTimeouts[filePath]) {
+//       clearTimeout(debounceTimeouts[filePath]);
+//     }
+
+//     // Set a new timeout
+//     debounceTimeouts[filePath] = setTimeout(() => {
+//       console.log(`Processing file: ${filename}`);
+
+//       // Check if the file exists
+//       if (fs.existsSync(filePath)) {
+//         // Process the image
+//         sharp(filePath)
+//           .resize(800) // Resize the image to a width of 800px
+//           .toBuffer()
+//           .then((data) => {
+//             // Save the processed image to a new file
+//             const outputFilePath = path.join(__dirname, 'missing', filename);
+//             fs.writeFileSync(outputFilePath, data);
+//             console.log(`Processed image saved to: ${outputFilePath}`);
+//           })
+//           .catch((err) => {
+//             console.error('Error processing image:', err);
+//           });
+//       } else {
+//         console.error(`File not found: ${filePath}`);
+//       }
+//     }, debounceTime);
+//   }
+// });
+
+
 
 // ----------------------------- Serve Uploaded Images -----------------------------
-app.use('/uploads', cors(), express.static('uploads'));
-app.use('/upload2', cors(), express.static('upload2'));
+app.use('/missing', cors(), express.static('missing'));
+app.use('/reported', cors(), express.static('reported'));
 app.use('/userpic', cors(), express.static('userpic'));
 
 // ----------------------------- Start Server -----------------------------

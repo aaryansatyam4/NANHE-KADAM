@@ -12,7 +12,7 @@ import Donate from './Pages/Donate';
 import Gallery from './Pages/Gallery';
 import AdoptChild from './Pages/AdoptChild';
 import Profile from './Pages/Profile';
-import PoliceDashboard from './Pages/PoliceDashboard';
+
 import FaceMatch from './Pages/FaceMatch';
 const App = () => {
   return (
@@ -21,7 +21,7 @@ const App = () => {
         <Route path="/" element={<Navigate replace to="/login" />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/Policedashboard" element={<PoliceDashboard />} />
+        {/* <Route path="/Policedashboard" element={<PoliceDashboard />} /> */}
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/be-volunteer" element={<BeVolunteer />} />
         <Route path="/report-lost-child" element={<ReportLostChild />} />

@@ -72,20 +72,24 @@ const Sidebar = () => {
             </Link>
           </li>
 
-          <li className="nav-item">
+          {/* Commenting out Donate link */}
+          {/* <li className="nav-item">
             <Link to="/Donate" className={`nav-link text-decoration-none ${isActive('/Donate')} ${isSidebarCollapsed ? 'text-center' : ''}`}>
               {isSidebarCollapsed ? <BsFileEarmarkText /> : 'Donate'}
             </Link>
-          </li>
+          </li> */}
+
           <li className="nav-item">
             <Link to="/Gallery" className={`nav-link text-decoration-none ${isActive('/Gallery')} ${isSidebarCollapsed ? 'text-center' : ''}`}>
               {isSidebarCollapsed ? <BsFileEarmarkText /> : 'Gallery'}
             </Link>
           </li>
-          <li className="nav-item">
-            <Link to="/AdoptChild" className={`nav-link text-decoration-none ${isActive('/AdoptChild')} ${isSidebarCollapsed ? 'text-center' : ''}`}>
-              {isSidebarCollapsed ? <BsFileEarmarkText /> : 'Adopt a child'}
-            </Link>
+
+          {/* Disabled "Adopt Child" link with "Coming Soon" */}
+          <li className="nav-item disabled">
+            <span className={`nav-link text-decoration-none ${isSidebarCollapsed ? 'text-center' : ''}`} style={{ cursor: 'not-allowed', color: '#6c757d' }}>
+              {isSidebarCollapsed ? <BsFileEarmarkText /> : 'Coming Soon'}
+            </span>
           </li>
 
           {/* Add other sidebar links here as needed */}

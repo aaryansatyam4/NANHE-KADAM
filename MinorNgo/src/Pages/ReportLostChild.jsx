@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card } from 'react-bootstrap';
-import Sidebar from '../Component/Sidebar/Sidebar'; // Assuming you have a Sidebar component
-import Navbar from '../Component/Navbar/CustomNavbar'; // Assuming you have a Navbar component
-import axios from 'axios'; // For sending data to the backend
+import Sidebar from '../Component/Sidebar/Sidebar';
+import Navbar from '../Component/Navbar/CustomNavbar';
+import axios from 'axios';
 
 const ReportLostChild = () => {
   const [formData, setFormData] = useState({
     parentName: '',
     contactNumber: '',
     childName: '',
+    email:'',
     age: '',
     gender: '',
     lastSeen: '',
@@ -40,25 +41,26 @@ const ReportLostChild = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null); // Reset previous errors
-    setSuccess(null); // Reset previous success message
+    setError(null);
+    setSuccess(null);
 
     const formDataToSend = new FormData();
     formDataToSend.append('parentName', formData.parentName);
     formDataToSend.append('contactNumber', formData.contactNumber);
     formDataToSend.append('childName', formData.childName);
+    formDataToSend.append('email', formData.email);
     formDataToSend.append('age', formData.age);
     formDataToSend.append('gender', formData.gender);
     formDataToSend.append('lastSeen', formData.lastSeen);
     formDataToSend.append('description', formData.description);
-    formDataToSend.append('childPhoto', formData.childPhoto); // File input
+    formDataToSend.append('childPhoto', formData.childPhoto);
 
     try {
       const response = await axios.post('http://localhost:3001/add-missing-child', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-        withCredentials: true, // Ensure cookies are sent with the request
+        withCredentials: true,
       });
 
       setSuccess('Lost child report submitted successfully.');
@@ -71,49 +73,43 @@ const ReportLostChild = () => {
 
   return (
     <div>
-      {/* Sticky Sidebar */}
       <div style={{ position: 'fixed', top: '0', left: '0', zIndex: 2, height: '100vh', width: '250px' }}>
         <Sidebar />
       </div>
 
-      {/* Sticky Navbar */}
       <div style={{ position: 'fixed', top: '0', left: '250px', right: '0', zIndex: 1, height: '60px' }}>
         <Navbar />
       </div>
 
-      {/* Main Content Area */}
       <div className="d-flex" style={{ marginTop: '60px', marginLeft: '250px' }}>
         <Container className="p-4">
           <Row className="justify-content-center">
             <Col md={8}>
               <Card className="shadow-lg p-4 mb-5 bg-white rounded">
                 <Card.Body>
-                  <h3 className="text-center mb-4">Bacha Mila</h3>
-                  <p className="text-center text-muted mb-4">
-                    Save a child 
+                  <h3 className="text-center mb-4 heading-title">Report a Found Child</h3>
+                  <p className="text-center text-muted mb-4 heading-subtitle">
+                    Help reunite a lost child with their family
                   </p>
 
                   {error && <div className="alert alert-danger">{error}</div>}
                   {success && <div className="alert alert-success">{success}</div>}
 
-                  {/* Report Lost Child Form */}
                   <Form onSubmit={handleSubmit}>
-                    {/* Parent's Name */}
                     <Form.Group className="mb-3" controlId="formParentName">
-                      <Form.Label>Parent's Name</Form.Label>
+                      <Form.Label>Guardian's Full Name</Form.Label>
                       <Form.Control 
                         type="text" 
                         name="parentName"
                         value={formData.parentName}
                         onChange={handleChange} 
-                        placeholder="Enter parent's name" 
+                        placeholder="Enter guardian's name" 
                         required 
                       />
                     </Form.Group>
 
-                    {/* Contact Number */}
                     <Form.Group className="mb-3" controlId="formContactNumber">
-                      <Form.Label>Contact Number</Form.Label>
+                      <Form.Label>Emergency Contact Number</Form.Label>
                       <Form.Control 
                         type="text" 
                         name="contactNumber"
@@ -124,9 +120,8 @@ const ReportLostChild = () => {
                       />
                     </Form.Group>
 
-                    {/* Child's Name */}
                     <Form.Group className="mb-3" controlId="formChildName">
-                      <Form.Label>Child's Name</Form.Label>
+                      <Form.Label>Full Name of the Child</Form.Label>
                       <Form.Control 
                         type="text" 
                         name="childName"
@@ -137,9 +132,20 @@ const ReportLostChild = () => {
                       />
                     </Form.Group>
 
-                    {/* Age */}
+                    <Form.Group className="mb-3" controlId="formChildName">
+                      <Form.Label>email</Form.Label>
+                      <Form.Control 
+                        type="email" 
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange} 
+                        placeholder="Enter your email id" 
+                        required 
+                      />
+                    </Form.Group>
+
                     <Form.Group className="mb-3" controlId="formChildAge">
-                      <Form.Label>Age</Form.Label>
+                      <Form.Label>Child's Age</Form.Label>
                       <Form.Control 
                         type="number" 
                         name="age"
@@ -150,9 +156,8 @@ const ReportLostChild = () => {
                       />
                     </Form.Group>
 
-                    {/* Gender */}
                     <Form.Group className="mb-3" controlId="formChildGender">
-                      <Form.Label>Gender</Form.Label>
+                      <Form.Label>Child's Gender</Form.Label>
                       <Form.Select 
                         name="gender"
                         value={formData.gender}
@@ -166,9 +171,8 @@ const ReportLostChild = () => {
                       </Form.Select>
                     </Form.Group>
 
-                    {/* Last Seen Location */}
                     <Form.Group className="mb-3" controlId="formLastSeenLocation">
-                      <Form.Label>Last Seen Location</Form.Label>
+                      <Form.Label>Location Where the Child Was Last Seen</Form.Label>
                       <Form.Control 
                         type="text" 
                         name="lastSeen"
@@ -179,9 +183,8 @@ const ReportLostChild = () => {
                       />
                     </Form.Group>
 
-                    {/* Image Upload */}
                     <Form.Group className="mb-3" controlId="formChildImage">
-                      <Form.Label>Upload a Recent Photo</Form.Label>
+                      <Form.Label>Upload a Clear, Recent Photograph of the Child</Form.Label>
                       <Form.Control 
                         type="file" 
                         accept="image/*"
@@ -190,9 +193,8 @@ const ReportLostChild = () => {
                       />
                     </Form.Group>
 
-                    {/* Description */}
                     <Form.Group className="mb-3" controlId="formDescription">
-                      <Form.Label>Description (Clothes, appearance, etc.)</Form.Label>
+                      <Form.Label>Additional Identifying Information</Form.Label>
                       <Form.Control 
                         as="textarea" 
                         rows={3} 
@@ -203,7 +205,6 @@ const ReportLostChild = () => {
                       />
                     </Form.Group>
 
-                    {/* Submit Button */}
                     <div className="d-grid">
                       <Button variant="danger" type="submit">
                         Submit Report

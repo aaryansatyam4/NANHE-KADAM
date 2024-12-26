@@ -1,62 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import Sidebar from '../Component/Sidebar/Sidebar'; // Import Sidebar component
-import Navbar from '../Component/Navbar/CustomNavbar.jsx'; // Import Navbar component
-import axios from 'axios'; // For sending data to the backend
+import React, { useState } from 'react';
+import Sidebar from '../Component/Sidebar/Sidebar'; 
+import Navbar from '../Component/Navbar/CustomNavbar.jsx'; 
+import axios from 'axios'; 
 
 const AddLostChild = () => {
   const [formData, setFormData] = useState({
     childName: '',
     age: '',
     gender: '',
+    email:'',
     lastSeen: '',
     description: '',
     childPhoto: null,
     guardianName: '',
     contactInfo: '',
     additionalComments: '',
-    lastSeenLocation: '', // Added lastSeenLocation
+    lastSeenLocation: '',
   });
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     const formDataToSend = new FormData();
     formDataToSend.append('childName', formData.childName);
     formDataToSend.append('age', formData.age);
     formDataToSend.append('gender', formData.gender);
+    formDataToSend.append('email', formData.email);
     formDataToSend.append('lastSeen', formData.lastSeen);
     formDataToSend.append('description', formData.description);
     formDataToSend.append('guardianName', formData.guardianName);
     formDataToSend.append('contactInfo', formData.contactInfo);
     formDataToSend.append('additionalComments', formData.additionalComments);
-    formDataToSend.append('lastSeenLocation', formData.lastSeenLocation); // Added lastSeenLocation to submission
-    formDataToSend.append('childPhoto', formData.childPhoto); // Ensure the file input is correctly appended
-
+    formDataToSend.append('lastSeenLocation', formData.lastSeenLocation);
+    formDataToSend.append('childPhoto', formData.childPhoto);
+  
+    console.log("Sending FormData:", formDataToSend); // Debugging FormData
+  
     try {
       const response = await axios.post('http://localhost:3001/add-lost-child', formDataToSend, {
         headers: {
-          'Content-Type': 'multipart/form-data', // Ensure multipart/form-data
+          'Content-Type': 'multipart/form-data',
         },
-        withCredentials: true, // Ensure cookies are sent
+        withCredentials: true,
       });
+  
       console.log(response.data);
-      alert('Lost child report submitted successfully');
+      alert(response.data.message);  // Display success message from the backend
+      
+      // Refresh the page after successful form submission
+      window.location.reload();
     } catch (error) {
       console.error('Error submitting the form:', error.response ? error.response.data : error.message);
       alert('Error submitting the form');
     }
   };
+  
 
-  // File change handler
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setFormData((prevData) => ({
       ...prevData,
-      childPhoto: file, // Make sure this sets the file correctly
+      childPhoto: file,
     }));
   };
 
-  // General input change handler
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -67,23 +73,19 @@ const AddLostChild = () => {
 
   return (
     <div>
-      {/* Sticky Sidebar */}
       <div style={{ position: 'fixed', top: '0', left: '0', zIndex: 2, height: '100vh', width: '250px' }}>
         <Sidebar />
       </div>
 
-      {/* Sticky Navbar */}
       <div style={{ position: 'fixed', top: '0', left: '250px', right: '0', zIndex: 1, height: '60px' }}>
         <Navbar />
       </div>
 
-      {/* Main Content */}
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', marginLeft: '250px', marginTop: '60px' }}>
         <div className="card shadow-lg" style={{ maxWidth: '600px', width: '100%' }}>
           <div className="card-body p-4">
-            <h2 className="card-title text-center mb-4">Report Lost Child</h2>
+            <h2 className="card-title text-center mb-4">Report a Missing Child</h2>
             <form onSubmit={handleSubmit}>
-              {/* Child's Name */}
               <div className="mb-3">
                 <label className="form-label" htmlFor="childName">Child's Name</label>
                 <input 
@@ -93,12 +95,11 @@ const AddLostChild = () => {
                   type="text" 
                   value={formData.childName} 
                   onChange={handleChange} 
-                  placeholder="Enter child's full name" 
+                  placeholder="Enter missing child's full name" 
                   required 
                 />
               </div>
 
-              {/* Age */}
               <div className="mb-3">
                 <label className="form-label" htmlFor="age">Child's Age</label>
                 <input 
@@ -113,9 +114,8 @@ const AddLostChild = () => {
                 />
               </div>
 
-              {/* Gender */}
               <div className="mb-3">
-                <label className="form-label" htmlFor="gender">Gender</label>
+                <label className="form-label" htmlFor="gender">Child's Gender</label>
                 <select 
                   className="form-select" 
                   id="gender" 
@@ -131,9 +131,22 @@ const AddLostChild = () => {
                 </select>
               </div>
 
-              {/* Last Seen Location */}
               <div className="mb-3">
-                <label className="form-label" htmlFor="lastSeenLocation">Last Seen Location</label>
+                <label className="form-label" htmlFor="email">Your Email</label>
+                <input 
+                  className="form-control" 
+                  id="email" 
+                  name="email" 
+                  type="email" 
+                  value={formData.email} 
+                  onChange={handleChange} 
+                  placeholder="Your email" 
+                  required 
+                />
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label" htmlFor="lastSeenLocation">Location Where the Child Was Last Seen</label>
                 <input 
                   className="form-control" 
                   id="lastSeenLocation" 
@@ -146,9 +159,8 @@ const AddLostChild = () => {
                 />
               </div>
 
-              {/* Description */}
               <div className="mb-3">
-                <label className="form-label" htmlFor="description">Description</label>
+                <label className="form-label" htmlFor="description">Description of the Child</label>
                 <textarea 
                   className="form-control" 
                   id="description" 
@@ -161,9 +173,8 @@ const AddLostChild = () => {
                 ></textarea>
               </div>
 
-              {/* Guardian's Name */}
               <div className="mb-3">
-                <label className="form-label" htmlFor="guardianName">Guardian's Name</label>
+                <label className="form-label" htmlFor="guardianName">Guardian's Full Name</label>
                 <input 
                   className="form-control" 
                   id="guardianName" 
@@ -176,9 +187,8 @@ const AddLostChild = () => {
                 />
               </div>
 
-              {/* Contact Information */}
               <div className="mb-3">
-                <label className="form-label" htmlFor="contactInfo">Contact Information</label>
+                <label className="form-label" htmlFor="contactInfo">Your Contact Information</label>
                 <input 
                   className="form-control" 
                   id="contactInfo" 
@@ -186,12 +196,11 @@ const AddLostChild = () => {
                   type="text" 
                   value={formData.contactInfo} 
                   onChange={handleChange} 
-                  placeholder="Enter contact information" 
+                  placeholder="Enter your contact information" 
                   required 
                 />
               </div>
 
-              {/* Additional Comments */}
               <div className="mb-3">
                 <label className="form-label" htmlFor="additionalComments">Additional Comments</label>
                 <textarea 
@@ -205,9 +214,8 @@ const AddLostChild = () => {
                 ></textarea>
               </div>
 
-              {/* Upload Child Photo */}
               <div className="mb-3">
-                <label className="form-label" htmlFor="childPhoto">Upload Child's Photo</label>
+                <label className="form-label" htmlFor="childPhoto">Upload a Recent Photo of the Child</label>
                 <input 
                   className="form-control" 
                   id="childPhoto" 
@@ -219,13 +227,7 @@ const AddLostChild = () => {
                 />
               </div>
 
-              {/* Submit Button */}
-              <button 
-                type="submit" 
-                className="btn btn-primary w-100"
-              >
-                Submit
-              </button>
+              <button type="submit" className="btn btn-primary w-100">Submit Lost Child Report</button>
             </form>
           </div>
         </div>

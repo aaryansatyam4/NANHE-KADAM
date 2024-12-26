@@ -4,6 +4,7 @@ const MissingChildSchema = new mongoose.Schema({
   parentName: { type: String, required: true },
   contactNumber: { type: String, required: true },
   childName: { type: String, required: true },
+  email:{ type: String, required: true },
   age: { type: Number, required: true },
   gender: { type: String, required: true },
   lastSeen: { type: String, required: true },

@@ -6,10 +6,13 @@ const Signup = () => {
   const [category, setCategory] = useState('');
   const [photo, setPhoto] = useState(null);
   const [name, setName] = useState('');
-  const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [id, setId] = useState('');
+  const [otpSent, setOtpSent] = useState(false); // To track OTP status
+  const [otp, setOtp] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false); // To track OTP verification status
+  const [showOtpModal, setShowOtpModal] = useState(false); // To control OTP modal visibility
 
   const navigate = useNavigate(); // To navigate to /login after submission
 
@@ -28,11 +31,6 @@ const Signup = () => {
     setName(event.target.value);
   };
 
-  // Handler for mobile change
-  const handleMobileChange = (event) => {
-    setMobile(event.target.value);
-  };
-
   // Handler for email change
   const handleEmailChange = (event) => {
     setEmail(event.target.value);
@@ -47,24 +45,49 @@ const Signup = () => {
   const handleIdChange = (event) => {
     setId(event.target.value);
   };
+
+  // Send OTP function
+  const handleSendOtp = (e) => {
+    e.preventDefault();
+    axios.post('http://localhost:3001/send-otp', { email })
+      .then((response) => {
+        console.log(response.data);
+        setOtpSent(true);
+        setShowOtpModal(true); // Show OTP modal on successful OTP send
+      })
+      .catch((error) => {
+        console.error('Error sending OTP:', error);
+      });
+  };
+
+  // Verify OTP function
+  const handleVerifyOtp = (e) => {
+    e.preventDefault();
+
+    axios.post('http://localhost:3001/verify-otp', { email, otp })
+      .then((response) => {
+        console.log(response.data);
+        setOtpVerified(true);
+        setShowOtpModal(false); // Close OTP modal on successful verification
+      })
+      .catch((error) => {
+        console.error('Error verifying OTP:', error);
+      });
+  };
+
+  // Submit the form after OTP verification
   const handleSubmit = (e) => {
     e.preventDefault();
-  
+
     // Prepare FormData for submission
     const formData = new FormData();
     formData.append('name', name);
-    formData.append('mobile', mobile);
     formData.append('email', email);
     formData.append('category', category);
     formData.append('password', password);
     formData.append('id', id);
     formData.append('photo', photo); // Append the photo file
-  
-    // Log the FormData for debugging
-    for (let pair of formData.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }
-  
+
     axios.post('http://localhost:3001/register', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -82,12 +105,12 @@ const Signup = () => {
         }
       });
   };
-  
+
   return (
     <div className="container d-flex justify-content-center align-items-center vh-100">
       <div className="card p-4 shadow-lg" style={{ width: '36rem', borderRadius: '15px' }}>
         <h3 className="text-center mb-4">Sign Up</h3>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={otpVerified ? handleSubmit : handleSendOtp}>
           <div className="row">
             {/* Left Column: Form Fields */}
             <div className="col-md-6">
@@ -100,18 +123,6 @@ const Signup = () => {
                   placeholder="Enter name"
                   value={name}
                   onChange={handleNameChange}
-                />
-              </div>
-
-              <div className="form-group mb-3">
-                <label htmlFor="mobile">Mobile</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  id="mobile"
-                  placeholder="Enter mobile number"
-                  value={mobile}
-                  onChange={handleMobileChange}
                 />
               </div>
 
@@ -137,9 +148,9 @@ const Signup = () => {
                 >
                   <option value="">Select Category</option>
                   <option value="user">User</option>
-                  <option value="volunteer">Volunteer</option>
+                  {/* <option value="volunteer">Volunteer</option>
                   <option value="police">Police</option>
-                  <option value="investigation">Investigation Department</option>
+                  <option value="investigation">Investigation Department</option> */}
                 </select>
               </div>
 
@@ -208,13 +219,49 @@ const Signup = () => {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-primary w-100 mt-4">Submit</button>
+          {!otpVerified ? (
+            <button type="submit" className="btn btn-primary w-100 mt-4">
+              {otpSent ? 'Verify OTP' : 'Send OTP'}
+            </button>
+          ) : (
+            <button type="submit" className="btn btn-primary w-100 mt-4">Submit</button>
+          )}
         </form>
 
         <div className="text-center mt-3">
           <p>Already have an account? <Link to="/login" className="text-primary">Login</Link></p>
         </div>
       </div>
+
+      {/* OTP Modal */}
+      {showOtpModal && (
+        <div className="modal" style={{ display: 'block', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-content" style={{ padding: '20px', backgroundColor: 'white', borderRadius: '8px' }}>
+            <h4 className="text-center">Enter OTP</h4>
+            <div className="form-group mb-3">
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Enter OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
+            </div>
+            <button
+              className="btn btn-primary w-100 mt-4"
+              onClick={handleVerifyOtp}
+            >
+              Verify OTP
+            </button>
+            <button
+              className="btn btn-secondary w-100 mt-2"
+              onClick={() => setShowOtpModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
