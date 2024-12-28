@@ -1,47 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale } from 'chart.js';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+// Register necessary chart components
+ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale, LinearScale);
 
 const Piechart = () => {
-  const [rescuesDone, setRescuesDone] = useState(0);
-  const [rescuesRemaining, setRescuesRemaining] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  // Fetch data from API
+  const [victimData, setVictimData] = useState([]);
+  
+  // Fetch data when the component mounts
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('http://localhost:3001/rescue-data'); // Replace with your actual API endpoint
-        const data = await response.json();
+    fetch('https://api.data.gov.in/resource/1a00de01-dd7f-41d4-8d29-e6febfff7e2f?api-key=579b464db66ec23bdd000001cdd3946e44ce4aad7209ff7b23ac571b&format=json')
+      .then(response => response.json())
+      .then(data => {
+        // Parse the data and set it for the chart
+        const labels = data.records.map(item => item.state_ut);
+        const childVictims = data.records.map(item => item.child_victims___total_child_victims___t___col__22_);
         
-        // Assuming API returns an object with `rescuesDone` and `rescuesRemaining` fields
-        setRescuesDone(data.rescuesDone || 0);
-        setRescuesRemaining(data.rescuesRemaining || 0);
-      } catch (error) {
-        console.error('Error fetching rescue data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+        setVictimData({ labels, childVictims });
+      })
+      .catch(error => console.error("Error fetching data:", error));
   }, []);
-
-  // Data for the pie chart
-  const data = {
-    labels: ['Rescues Done', 'Rescues Remaining'],
+  
+  const chartData = {
+    labels: victimData.labels || [],
     datasets: [
       {
-        label: 'Volunteer Rescues',
-        data: [rescuesDone, rescuesRemaining], // Dynamic values from API
-        backgroundColor: ['#36A2EB', '#FF6384'], // Colors for the chart
-        hoverBackgroundColor: ['#36A2EB', '#FF6384'],
-      },
-    ],
+        data: victimData.childVictims || [],
+        backgroundColor: [
+          "#FF5733", "#FF8D1A", "#FFDA47", "#FFBD00", "#FFD700",
+          "#0D6EFD", "#1E7B00", "#DC3545", "#6F42C1", "#FFC0CB"
+        ], // Color for each slice of the pie
+        hoverOffset: 4
+      }
+    ]
   };
 
   const options = {
@@ -52,26 +44,20 @@ const Piechart = () => {
       },
       tooltip: {
         callbacks: {
-          label: function (tooltipItem) {
-            return `${tooltipItem.label}: ${tooltipItem.raw}`;
-          },
-        },
-      },
-    },
+          label: function(tooltipItem) {
+            return `${tooltipItem.label}: ${tooltipItem.raw} victims`; // Custom tooltips
+          }
+        }
+      }
+    }
   };
 
-  if (loading) {
-    return <p>Loading chart data...</p>; // Display loading message while data is being fetched
-  }
-
   return (
-    <div className="m-4">
-      <h4 className="text-center mb-4">Volunteer Rescues Overview</h4>
-      <div style={{ width: '400px', margin: '0 auto' }}>
-        <Pie data={data} options={options} />
-      </div>
+    <div style={{ width: '70%', height: '70%', marginBottom : '80px' }}>
+      <h3>State/UT-wise Number of Child Victims of Kidnapping and Abduction during 2022</h3>
+      <Pie data={chartData} options={options} />
     </div>
   );
-};
+}
 
 export default Piechart;
