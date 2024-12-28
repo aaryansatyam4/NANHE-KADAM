@@ -212,7 +212,7 @@ app.get('/events', async (req, res) => {
 
 app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (req, res) => {
   const { parentName, contactNumber, childName, email, age, gender, lastSeen, description } = req.body;
-  const childPhoto = req.file ? req.file.filename : null;
+  const childPhoto = req.file ? req.file.filename : null; // Store the image filename
   const userId = req.cookies.userId;
 
   if (!userId) {
@@ -237,17 +237,17 @@ app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (r
     console.log('Missing child saved:', savedChild);
 
     // Define file paths for comparison (image is in the 'reported' folder, matching with 'missing' folder)
-    const missingPhotoPath = path.join(__dirname, 'reported', req.file.filename); // The uploaded image is in 'reported'
-    const missingFolderPath = path.join(__dirname, 'missing'); // Compare with all images in 'missing' folder
+    const missingPhotoPath = path.join(__dirname, 'reported', req.file.filename); // The uploaded image
+    const missingFolderPath = path.join(__dirname, 'missing'); // Folder for missing children's photos
 
     // Run Python face recognition script to find a match
     const pythonProcess = spawn('python', [
       './ReportedFaceRecog.py',
       missingPhotoPath,
-      missingFolderPath, // Path to missing folder for comparison
+      missingFolderPath,
     ]);
 
-    console.log("Starting Python face recognition script...");
+    console.log('Starting Python face recognition script...');
 
     let output = '';
     pythonProcess.stdout.on('data', (data) => {
@@ -274,6 +274,11 @@ app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (r
           // Send an email to the guardian of the missing child and include matched children
           for (let match of matches) {
             const lostChild = { ...req.body, _id: savedChild._id };  // Create an object with the missing child data
+
+            // Ensure the lostChild object includes childPhoto from the database
+            lostChild.childPhoto = savedChild.childPhoto || 'default.jpg'; // Fallback if no photo is found
+
+            console.log('Lost Child Data:', lostChild); // Debugging: log lostChild
 
             // Send email to the guardian of the matched child
             await sendMatchNotificationToGuardians(lostChild, matches); // Pass missing child and matched children to the function
