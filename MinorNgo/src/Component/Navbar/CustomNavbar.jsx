@@ -65,29 +65,6 @@ function CustomNavbar() {
         <Navbar.Toggle aria-controls="navbar-nav" />
         <Navbar.Collapse id="navbar-nav">
           <Nav className="ms-auto align-items-center">
-            <Dropdown
-              show={showDropdown}
-              onToggle={() => setShowDropdown(!showDropdown)}
-              onClick={handleOpenDropdown}
-            >
-              <Dropdown.Toggle as={Nav.Link} id="dropdown-basic" className="p-0">
-                <i className="bi bi-bell" style={{ fontSize: '24px', cursor: 'pointer' }}></i>
-                {unreadCases.length > 0 && (
-                  <span className="badge">{unreadCases.length}</span>
-                )}
-              </Dropdown.Toggle>
-
-              <Dropdown.Menu>
-                {unreadCases.length > 0 ? unreadCaseItems : <Dropdown.Item>No new cases</Dropdown.Item>}
-              </Dropdown.Menu>
-            </Dropdown>
-
-            <NavDropdown title={location} id="location-nav-dropdown" className="mx-3">
-              <NavDropdown.Item onClick={() => setLocation('New York')}>New York</NavDropdown.Item>
-              <NavDropdown.Item onClick={() => setLocation('London')}>London</NavDropdown.Item>
-              <NavDropdown.Item onClick={() => setLocation('Tokyo')}>Tokyo</NavDropdown.Item>
-            </NavDropdown>
-
             <NavDropdown
               title={<i className="bi bi-person-circle" style={{ fontSize: '24px' }}></i>}
               id="profile-nav-dropdown"
