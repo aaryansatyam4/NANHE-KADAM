@@ -212,7 +212,7 @@ app.get('/events', async (req, res) => {
 
 app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (req, res) => {
   const { parentName, contactNumber, childName, email, age, gender, lastSeen, description } = req.body;
-  const childPhoto = req.file ? req.file.filename : null; // Store the image filename
+  const childPhoto = req.file ? req.file.filename : null;
   const userId = req.cookies.userId;
 
   if (!userId) {
@@ -220,7 +220,6 @@ app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (r
   }
 
   try {
-    // Save missing child data in the database
     const newChild = new MissingChild({
       parentName,
       contactNumber,
@@ -233,25 +232,27 @@ app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (r
       childPhoto,
       submittedBy: userId,
     });
+
     const savedChild = await newChild.save();
     console.log('Missing child saved:', savedChild);
 
-    // Define file paths for comparison (image is in the 'reported' folder, matching with 'missing' folder)
-    const missingPhotoPath = path.join(__dirname, 'reported', req.file.filename); // The uploaded image
-    const missingFolderPath = path.join(__dirname, 'missing'); // Folder for missing children's photos
+    const missingPhotoPath = path.join(__dirname, 'reported', req.file.filename);
+    const missingFolderPath = path.join(__dirname, 'missing');
 
-    // Run Python face recognition script to find a match
+    // ✅ Pass age and gender to Python script
     const pythonProcess = spawn('python', [
       './ReportedFaceRecog.py',
       missingPhotoPath,
       missingFolderPath,
+      age.toString(),
+      gender.toString()
     ]);
 
     console.log('Starting Python face recognition script...');
 
     let output = '';
     pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();  // Accumulate output
+      output += data.toString();
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -271,17 +272,9 @@ app.post('/add-missing-child', uploadMissingChild.single('childPhoto'), async (r
         const matches = JSON.parse(output);
 
         if (matches.length > 0) {
-          // Send an email to the guardian of the missing child and include matched children
           for (let match of matches) {
-            const lostChild = { ...req.body, _id: savedChild._id };  // Create an object with the missing child data
-
-            // Ensure the lostChild object includes childPhoto from the database
-            lostChild.childPhoto = savedChild.childPhoto || 'default.jpg'; // Fallback if no photo is found
-
-            console.log('Lost Child Data:', lostChild); // Debugging: log lostChild
-
-            // Send email to the guardian of the matched child
-            await sendMatchNotificationToGuardians(lostChild, matches); // Pass missing child and matched children to the function
+            const lostChild = { ...req.body, _id: savedChild._id, childPhoto: savedChild.childPhoto || 'default.jpg' };
+            await sendMatchNotificationToGuardians(lostChild, matches);
           }
 
           return res.status(200).json({
@@ -371,17 +364,20 @@ app.post('/add-lost-child', uploadLostChild.single('childPhoto'), async (req, re
     const missingPhotoPath = path.join(__dirname, 'missing', req.file.filename);
     const reportedFolderPath = path.join(__dirname, 'reported');
 
+    // ✅ Include age and gender in Python spawn args
     const pythonProcess = spawn('python', [
       './Facerecog.py',
       missingPhotoPath,
-      reportedFolderPath
+      reportedFolderPath,
+      age.toString(),    // Pass age to Python
+      gender.toString()  // Pass gender to Python
     ]);
 
     console.log("Starting Python face recognition script...");
 
     let output = '';
     pythonProcess.stdout.on('data', (data) => {
-      output += data.toString();  // Accumulate output
+      output += data.toString();
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -401,7 +397,6 @@ app.post('/add-lost-child', uploadLostChild.single('childPhoto'), async (req, re
         const matches = JSON.parse(output);
 
         if (matches.length > 0) {
-          // Send email dynamically with matched data
           await sendMatchEmail(savedLostChild._id, matches);
           return res.status(200).json({
             message: 'Lost child added and face matching completed, email sent to guardian',
@@ -423,6 +418,8 @@ app.post('/add-lost-child', uploadLostChild.single('childPhoto'), async (req, re
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
+
+
 // ----------------------------- Get All Lost Children API -----------------------------
 app.get('/all-lost-children', async (req, res) => {
   try {
@@ -771,41 +768,6 @@ const sharp = require('sharp'); // Import sharp for image processing
 
 const debounceTime = 200; // Time in milliseconds
 let debounceTimeouts = {};
-
-// fs.watch('./missing', (eventType, filename) => {
-//   if (filename) {
-//     const filePath = path.join(__dirname, 'missing', filename);
-
-//     // Clear the previous timeout for this file
-//     if (debounceTimeouts[filePath]) {
-//       clearTimeout(debounceTimeouts[filePath]);
-//     }
-
-//     // Set a new timeout
-//     debounceTimeouts[filePath] = setTimeout(() => {
-//       console.log(`Processing file: ${filename}`);
-
-//       // Check if the file exists
-//       if (fs.existsSync(filePath)) {
-//         // Process the image
-//         sharp(filePath)
-//           .resize(800) // Resize the image to a width of 800px
-//           .toBuffer()
-//           .then((data) => {
-//             // Save the processed image to a new file
-//             const outputFilePath = path.join(__dirname, 'missing', filename);
-//             fs.writeFileSync(outputFilePath, data);
-//             console.log(`Processed image saved to: ${outputFilePath}`);
-//           })
-//           .catch((err) => {
-//             console.error('Error processing image:', err);
-//           });
-//       } else {
-//         console.error(`File not found: ${filePath}`);
-//       }
-//     }, debounceTime);
-//   }
-// });
 
 
 

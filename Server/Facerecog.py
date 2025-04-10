@@ -10,60 +10,58 @@ client = MongoClient("mongodb+srv://aaryansatyam4:Asatyam2604@user.ycc6w.mongodb
 db = client["test"]  # Database name
 collection = db["missingchildren"]  # Collection name where the data is stored
 
-def load_images_from_folder_or_file(path):
-    images = []
-    if os.path.isfile(path):
-        image = face_recognition.load_image_file(path)
-        images.append((os.path.basename(path), image))
-    elif os.path.isdir(path):
-        for filename in os.listdir(path):
-            img_path = os.path.join(path, filename)
-            if os.path.isfile(img_path):
-                image = face_recognition.load_image_file(img_path)
-                images.append((filename, image))
-    return images
+def compare_faces(found_image_path, missing_folder_path, input_age, input_gender):
+    # Load the found image
+    found_image = face_recognition.load_image_file(found_image_path)
+    found_face_locations = face_recognition.face_locations(found_image)
 
-def compare_faces(folder_a, folder_b):
-    images_a = load_images_from_folder_or_file(folder_a)
-    images_b = load_images_from_folder_or_file(folder_b)
+    if len(found_face_locations) == 0:
+        return []
+
+    found_face_encoding = face_recognition.face_encodings(found_image, found_face_locations)[0]
+
+    # Apply age ±4 and gender filter
+    filtered_children = collection.find({
+        "age": { "$gte": input_age - 4, "$lte": input_age + 4 },
+        "gender": input_gender
+    })
 
     matches = []
-    for file_a, image_a in images_a:
-        for file_b, image_b in images_b:
-            face_locations_a = face_recognition.face_locations(image_a)
-            face_locations_b = face_recognition.face_locations(image_b)
+    for child in filtered_children:
+        filename = child.get('childPhoto')
+        image_path = os.path.join(missing_folder_path, filename)
 
-            if len(face_locations_a) > 0 and len(face_locations_b) > 0:
-                face_encoding_a = face_recognition.face_encodings(image_a, face_locations_a)[0]
-                face_encoding_b = face_recognition.face_encodings(image_b, face_locations_b)[0]
-                
-                # Calculate the face distance
-                face_distance = face_recognition.face_distance([face_encoding_a], face_encoding_b)[0]
-                
-                # If the face distance is below a threshold (e.g., 0.6), consider them as a match
-                if face_distance < 0.5:  # Adjust the threshold for your needs
-                    matched_child = collection.find_one({"childPhoto": file_b})  # Assuming `childPhoto` is stored as filename
+        if not os.path.exists(image_path):
+            continue
 
-                    # If the match is found in the database, add its details
-                    if matched_child:
-                        matched_child_details = {
-                            'filename': file_b,
-                            'childName': matched_child['childName'],
-                            'age': matched_child['age'],
-                            'gender': matched_child['gender'],
-                            'lastSeenLocation': matched_child['lastSeen'],
-                            'description': matched_child['description'],
-                            'parentName': matched_child['parentName'],
-                            'contactNumber': matched_child['contactNumber'],
-                            'email': matched_child['email'],
-                            'childPhoto': matched_child['childPhoto'],
-                        }
-                        matches.append(matched_child_details)
+        image = face_recognition.load_image_file(image_path)
+        face_locations = face_recognition.face_locations(image)
+
+        if len(face_locations) > 0:
+            encoding = face_recognition.face_encodings(image, face_locations)[0]
+            face_distance = face_recognition.face_distance([found_face_encoding], encoding)[0]
+
+            if face_distance < 0.5:
+                matched_child_details = {
+                    'filename': filename,
+                    'childName': child.get('childName', 'N/A'),
+                    'age': child.get('age', 'N/A'),
+                    'gender': child.get('gender', 'N/A'),
+                    'lastSeenLocation': child.get('lastSeen', 'N/A'),
+                    'description': child.get('description', 'N/A'),
+                    'parentName': child.get('parentName', 'N/A'),
+                    'contactNumber': child.get('contactNumber', 'N/A'),
+                    'email': child.get('email', 'N/A'),
+                    'childPhoto': child.get('childPhoto', 'N/A'),
+                }
+                matches.append(matched_child_details)
     return matches
 
 if __name__ == "__main__":
-    folder_a = sys.argv[1]  # Path to missing folder or single image file
-    folder_b = sys.argv[2]  # Path to reported folder
-    results = compare_faces(folder_a, folder_b)
-    # Output the results as JSON
+    found_image_path = sys.argv[1]  # Path to found/reported image
+    missing_folder_path = sys.argv[2]  # Path to missing children images
+    input_age = int(sys.argv[3])       # Age of the found child
+    input_gender = sys.argv[4]         # Gender of the found child
+
+    results = compare_faces(found_image_path, missing_folder_path, input_age, input_gender)
     print(json.dumps(results))
