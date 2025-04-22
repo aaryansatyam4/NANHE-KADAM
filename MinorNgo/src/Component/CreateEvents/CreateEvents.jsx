@@ -24,13 +24,12 @@ const CreateEvents = () => {
     setSuccessMessage('');
 
     try {
-      const response = await axios.post('http://localhost:3001/create-event', eventData, {
+      const response = await axios.post('http://localhost:3001/api/events', eventData, {
         withCredentials: true,
       });
       setSuccessMessage('Event created successfully');
       setEventData({ title: '', date: '', location: '', time: '', objectives: '' });
     } catch (error) {
-      console.error('Error creating event:', error.response?.data || error.message);
       setErrorMessage('Failed to create event. Please check all fields and try again.');
     }
   };
@@ -48,13 +47,12 @@ const CreateEvents = () => {
             name="title"
             value={eventData.title}
             onChange={handleChange}
-            placeholder="Enter event title"
             required
           />
         </Form.Group>
 
         <Form.Group controlId="date">
-          <Form.Label>Event Date</Form.Label>
+          <Form.Label>Date</Form.Label>
           <Form.Control
             type="date"
             name="date"
@@ -71,13 +69,12 @@ const CreateEvents = () => {
             name="location"
             value={eventData.location}
             onChange={handleChange}
-            placeholder="Enter event location"
             required
           />
         </Form.Group>
 
         <Form.Group controlId="time">
-          <Form.Label>Event Time</Form.Label>
+          <Form.Label>Time</Form.Label>
           <Form.Control
             type="time"
             name="time"
@@ -94,14 +91,12 @@ const CreateEvents = () => {
             name="objectives"
             value={eventData.objectives}
             onChange={handleChange}
-            placeholder="Enter event objectives"
+            rows={3}
             required
           />
         </Form.Group>
 
-        <Button variant="primary" type="submit" className="mt-3">
-          Create Event
-        </Button>
+        <Button className="mt-3" type="submit">Create</Button>
       </Form>
     </div>
   );

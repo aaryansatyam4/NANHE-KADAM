@@ -49,7 +49,8 @@ const Signup = () => {
   // Send OTP function
   const handleSendOtp = (e) => {
     e.preventDefault();
-    axios.post('http://localhost:3001/send-otp', { email })
+    axios.post('http://localhost:3001/api/otp/send', { email })
+
       .then((response) => {
         console.log(response.data);
         setOtpSent(true);
@@ -64,7 +65,8 @@ const Signup = () => {
   const handleVerifyOtp = (e) => {
     e.preventDefault();
 
-    axios.post('http://localhost:3001/verify-otp', { email, otp })
+    axios.post('http://localhost:3001/api/otp/verify', { email, otp })
+
       .then((response) => {
         console.log(response.data);
         setOtpVerified(true);
@@ -88,11 +90,12 @@ const Signup = () => {
     formData.append('id', id);
     formData.append('photo', photo); // Append the photo file
 
-    axios.post('http://localhost:3001/register', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    axios.post('http://localhost:3001/api/auth/register', formData, {
+  headers: {
+    'Content-Type': 'multipart/form-data',
+  },
+})
+
       .then(result => {
         console.log(result);
         navigate('/login'); // Navigate to /login after successful registration

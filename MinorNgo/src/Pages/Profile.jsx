@@ -11,23 +11,23 @@ const Profile = () => {
   };
 
   return (
-    <div>
-      {/* Fixed Sidebar */}
+    <div style={{ display: 'flex' }}>
+      {/* Sidebar */}
       {sidebarVisible && (
-        <div style={{ position: 'fixed', top: '0', left: '0', zIndex: 2, height: '100vh', width: '250px' }}>
+        <div style={{ position: 'fixed', top: 0, left: 0, height: '100vh', width: '250px', zIndex: 2 }}>
           <Sidebar />
         </div>
       )}
 
-      {/* Sticky Navbar */}
+      {/* Navbar */}
       <div
         style={{
           position: 'fixed',
-          top: '0',
-          left: sidebarVisible ? '250px' : '0', // Adjust based on sidebar visibility
-          right: '0',
-          zIndex: 1,
+          top: 0,
+          left: sidebarVisible ? '250px' : '0',
+          right: 0,
           height: '60px',
+          zIndex: 3,
           transition: 'left 0.3s ease',
         }}
       >
@@ -37,9 +37,10 @@ const Profile = () => {
       {/* Main Content */}
       <div
         style={{
-          marginLeft: sidebarVisible ? '250px' : '0',
           marginTop: '60px',
+          marginLeft: sidebarVisible ? '250px' : '0',
           padding: '20px',
+          width: '100%',
           transition: 'margin-left 0.3s ease',
         }}
       >

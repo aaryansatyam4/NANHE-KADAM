@@ -5,8 +5,8 @@ import Login from './Pages/Login';
 import Signup from './Pages/Signup';
 import Dashboard from './Pages/Dashboard';
 import BeVolunteer from './Pages/BeVolunteer'; 
-import ReportLostChild from './Pages/ReportLostChild'; // Import ReportLostChild component
-import AddLostChild from './Pages/AddLostChild';
+import ReportLostChild from './Pages/FoundChildReport'; // Import ReportLostChild component
+import AddLostChild from './Pages/AddMissingChild';
 import Events from './Pages/Events';
 import Donate from './Pages/Donate';
 import Gallery from './Pages/Gallery';
