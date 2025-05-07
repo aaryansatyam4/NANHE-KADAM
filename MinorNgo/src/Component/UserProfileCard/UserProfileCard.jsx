@@ -43,15 +43,16 @@ const UserProfileCard = () => {
   const handleCloseCase = async (id) => {
     try {
       await axios.put(`http://localhost:3001/api/children/close/${id}`, { founded: true });
-      setMissingChildren(prev =>
-        prev.map(child => child._id === id ? { ...child, founded: true } : child)
-      );
+  
+      // ✅ Remove the closed child from the list
+      setMissingChildren(prev => prev.filter(child => child._id !== id));
+  
       setShowModal(false);
     } catch (err) {
       console.error('Error closing case:', err);
     }
   };
-
+  
   if (!userData) return <div>Loading profile...</div>;
 
   const profilePicture = userData.photo
@@ -174,9 +175,6 @@ const UserProfileCard = () => {
                 </table>
               </div>
             </div>
-
-            <ReportedLostChildren />
-            <ReportedMissingChildren />
           </div>
         </div>
       </div>
@@ -195,7 +193,7 @@ const UserProfileCard = () => {
                   <img
                     src={
                       selectedChild.childPhoto
-                        ? `http://localhost:3001/childpic/${selectedChild.childPhoto}`
+                        ? `http://localhost:3001/reported/${selectedChild.childPhoto}`
                         : 'https://via.placeholder.com/150x150.png?text=No+Image'
                     }
                     alt="Child"

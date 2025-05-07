@@ -189,8 +189,16 @@ exports.closeCase = async (req, res) => {
   }
 
   try {
-    const updated = await LostChild.findByIdAndUpdate(childId, { founded }, { new: true });
-    if (!updated) return res.status(404).json({ message: 'Child not found' });
+    let updated = await LostChild.findByIdAndUpdate(childId, { founded }, { new: true });
+    if (!updated) {
+      // If not found in LostChild, try MissingChild
+      updated = await MissingChild.findByIdAndUpdate(childId, { founded }, { new: true });
+    }
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Child not found in either collection' });
+    }
+
     res.status(200).json(updated);
   } catch (err) {
     res.status(500).json({ message: 'Error closing case', error: err.message });

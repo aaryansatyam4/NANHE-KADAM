@@ -14,20 +14,25 @@ const SummaryCards = () => {
       try {
         const lostRes = await axios.get('http://localhost:3001/api/children/lost');
         const missingRes = await axios.get('http://localhost:3001/api/children/missingchildren/all');
-        const closed = lostRes.data.filter(child => child.founded === true).length;
-        const open = lostRes.data.filter(child => child.founded === false).length;
-
+    
+        // Count closed + open in BOTH collections
+        const closedLost = lostRes.data.filter(child => child.founded === true).length;
+        const openLost = lostRes.data.filter(child => child.founded === false).length;
+    
+        const closedMissing = missingRes.data.filter(child => child.founded === true).length;
+        const openMissing = missingRes.data.filter(child => child.founded === false).length;
+    
         setStats({
-          totalMissing: missingRes.data.length,
+          totalMissing: missingRes.data.filter(child => child.founded === false).length,
           totalLost: lostRes.data.length,
-          casesClosed: closed,
-          casesOpen: open,
+          casesClosed: closedLost + closedMissing,
+          casesOpen:  openMissing,
         });
       } catch (err) {
         console.error("Error fetching stats", err);
       }
     };
-
+    
     fetchStats();
   }, []);
 

@@ -20,12 +20,11 @@ const TopReporters = () => {
     const fetchReports = async () => {
       try {
         const lost = await axios.get('http://localhost:3001/api/children/lost');
-        const missing = await axios.get('http://localhost:3001/api/children/missingchildren/all');
-
+    
         const reportMap = {};
 
         // Merge both lost & missing reports and count by submittedBy._id
-        [...lost.data, ...missing.data].forEach(entry => {
+        [...lost.data].forEach(entry => {
           const user = entry.submittedBy;
           const userId = typeof user === 'object' ? user._id : user;
           const userName = typeof user === 'object'

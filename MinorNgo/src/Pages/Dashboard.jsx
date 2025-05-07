@@ -2,10 +2,12 @@ import React from 'react';
 import Sidebar from '../Component/Sidebar/Sidebar';
 import Navbar from '../Component/Navbar/CustomNavbar.jsx';
 import Piechart from '../Component/Piechart/Piechart.jsx';
+import LineGraph from '../Component/LineChart/LineChart.jsx'; // ✅ import LineGraph
 import SummaryCards from './Dashboard/SummaryCards.jsx';
 import TopReporters from './Dashboard/TopReporters.jsx';
 import UpcomingEvents from './Dashboard/UpcomingEvents';
 import ReportsOverTime from './Dashboard/ReportsOverTime';
+
 const Dashboard = () => {
   return (
     <div className="dashboard-container">
@@ -58,6 +60,18 @@ const Dashboard = () => {
           <SummaryCards />
         </div>
 
+        {/* Line Graph */}
+        <div style={{
+          width: '100%',
+          padding: '20px',
+          backgroundColor: '#ffffff',
+          boxShadow: '0px 4px 15px rgba(0,0,0,0.1)',
+          borderRadius: '10px'
+        }}>
+          <h3 style={{ textAlign: 'center', color: '#2C3E50', marginBottom: '20px' }}>Children Missing Over Years</h3>
+          <LineGraph />
+        </div>
+
         {/* Piechart */}
         <div style={{
           flex: '1',
@@ -84,14 +98,15 @@ const Dashboard = () => {
         }}>
           <TopReporters />
         </div>
-        <div style={{ width: '100%' }}>
-  <UpcomingEvents />
-</div>
-<div style={{ width: '100%' }}>
-  <ReportsOverTime />
-</div>
-      </div>
 
+        <div style={{ width: '100%' }}>
+          <UpcomingEvents />
+        </div>
+
+        <div style={{ width: '100%' }}>
+          <ReportsOverTime />
+        </div>
+      </div>
     </div>
   );
 };
